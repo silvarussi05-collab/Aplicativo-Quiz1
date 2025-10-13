@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App de Instrumentos Musicais</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="theme-color" content="#222222">
+</head>
+<body>
+
+  <!-- Splash Screen -->
+  <div id="splash" class="splash">
+    <h1>Bem-vindo ao App de Instrumentos!</h1>
+    <h2>Clique em iniciar para começar!</h2>
+    <button id="startBtn">Iniciar</button>
+  </div>
+
+  <!-- Conteúdo principal -->
+  <div id="mainApp" class="hidden">
+    <header>
+      <h1>Instrumentos Musicais</h1>
+    </header>
+
+    <main>
+      <!-- Seção de instrumentos -->
+      <section id="instrumentos">
+        <h2>Toque um instrumento</h2>
+        <div class="lista-instrumentos">
+          <div class="item" data-som="piano">
+            <img src="assets/images/piano.png" alt="Piano">
+            <p>Piano</p>
+          </div>
+          <div class="item" data-som="guitarra">
+            <img src="assets/images/guitarra.png" alt="Guitarra">
+            <p>Guitarra</p>
+          </div>
+          <div class="item" data-som="bateria">
+            <img src="assets/images/bateria.png" alt="Bateria">
+            <p>Bateria</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Seção de Quiz -->
+      <section id="quiz">
+        <h2>Quiz Musical</h2>
+        <p id="pergunta"></p>
+        <div id="opcoes"></div>
+        <div class="quiz-buttons">
+          <button id="anterior">Anterior</button>
+          <button id="proxima">Próxima Pergunta</button>
+        </div>
+        <p id="resultado"></p>
+      </section>
+    </main>
+
+    <footer>
+      <p>Feito por Matheus, Duda, Pedro, Raul e Lucca</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "Instrumentos Musicais",
+  "short_name": "Instrumentos",
+  "description": "Um app para tocar instrumentos e testar seu conhecimento musical!",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#222222",
+  "orientation": "portrait"
+}
