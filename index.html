@@ -3,63 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>App de Instrumentos Musicais</title>
+  <title>Quiz Musical Avançado</title>
   <link rel="stylesheet" href="style.css">
-  <meta name="theme-color" content="#222222">
+  <style>
+    button { 
+      cursor: pointer; 
+      border: none; 
+      border-radius: 5px; 
+      padding: 10px 20px; 
+      font-size: 16px; 
+      margin: 5px; 
+    }
+    .resposta-btn { 
+      display: block; 
+      margin: 10px auto; 
+      width: 200px; 
+    }
+    .resposta-btn.correta { 
+      background-color: #4caf50; 
+      color: #fff; 
+    }
+    .resposta-btn.errada { 
+      background-color: #f44336; 
+      color: #fff; 
+    }
+    #cronometro { 
+      font-weight: bold; 
+      margin: 10px 0; 
+    }
+    .hidden { 
+      display: none; 
+    }
+    .final-actions { 
+      margin-top: 20px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 10px; 
+    }
+  </style>
 </head>
 <body>
-
-  <!-- Splash Screen -->
+  <!-- Tela inicial -->
   <div id="splash" class="splash">
-    <h1>Bem-vindo ao App de Instrumentos!</h1>
-    <h2>Clique em iniciar para começar!</h2>
-    <button id="startBtn">Iniciar</button>
+    <div class="splash-overlay">
+      <h1>Bem-vindo ao Quiz Musical!</h1>
+      <h2>Divirta-se aprendendo sobre instrumentos modernos!</h2>
+      <button id="startBtn">Iniciar Quiz</button>
+    </div>
+    <canvas id="particles"></canvas>
   </div>
 
-  <!-- Conteúdo principal -->
+  <!-- App principal -->
   <div id="mainApp" class="hidden">
     <header>
-      <h1>Instrumentos Musicais</h1>
+      <h1 id="titulo-quiz">Instrumentos Musicais</h1>
     </header>
 
     <main>
-      <!-- Seção de instrumentos -->
-      <section id="instrumentos">
-        <h2>Toque um instrumento</h2>
-        <div class="lista-instrumentos">
-          <div class="item" data-som="piano">
-            <img src="assets/images/piano.png" alt="Piano">
-            <p>Piano</p>
-          </div>
-          <div class="item" data-som="guitarra">
-            <img src="assets/images/guitarra.png" alt="Guitarra">
-            <p>Guitarra</p>
-          </div>
-          <div class="item" data-som="bateria">
-            <img src="assets/images/bateria.png" alt="Bateria">
-            <p>Bateria</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Seção de Quiz -->
-      <section id="quiz">
-        <h2>Quiz Musical</h2>
+      <!-- Quiz -->
+      <section id="quiz" class="hidden">
+        <div id="cronometro"></div>
         <p id="pergunta"></p>
+
         <div id="opcoes"></div>
         <div class="quiz-buttons">
-          <button id="anterior">Anterior</button>
           <button id="proxima">Próxima Pergunta</button>
         </div>
         <p id="resultado"></p>
       </section>
+
+      <!-- Tela final -->
+      <section id="final" class="hidden">
+        <div id="finalBox" class="final-box"></div>
+      </section>
     </main>
 
     <footer>
-      <p>Feito por Matheus, Duda, Pedro, Raul e Lucca</p>
+      <p id="footer-text">Feito por: Matheus, Duda, Pedro, Raul, Lucca e Phellipe</p>
     </footer>
   </div>
 
+  <!-- Script JS -->
   <script src="app.js"></script>
 </body>
 </html>

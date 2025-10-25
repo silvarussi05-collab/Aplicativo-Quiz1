@@ -1,10 +1,16 @@
-/* app.js — Versão completa com timer, sons, feedback visual, ranking e reiniciar */
+/* =========================
+   app.js — Quiz com Timer 30s (sem ouvir instrumentos)
+   ========================= */
 
-// -------- Configurações iniciais --------
-let pontuacao = 0;
-let tempoInicio = null;
-let tempoInterval = null;
+let pontuacao = 0,
+    indice = 0,
+    tempoInicio = null,
+    tempoInterval = null,
+    respostaSelecionada = false,
+    timerPerguntaInterval = null,
+    tempoPergunta = 30; // 30 segundos por pergunta
 
+// elementos
 const splash = document.getElementById("splash");
 const startBtn = document.getElementById("startBtn");
 const mainApp = document.getElementById("mainApp");
@@ -13,218 +19,265 @@ const perguntaEl = document.getElementById("pergunta");
 const opcoesEl = document.getElementById("opcoes");
 const resultadoEl = document.getElementById("resultado");
 const btnProxima = document.getElementById("proxima");
+const finalSection = document.getElementById("final");
+const finalBox = document.getElementById("finalBox");
 
-// cria elemento de timer (será inserido dinamicamente dentro do quiz)
-let timerEl = null;
-function createTimerEl() {
-  if (!timerEl) {
-    timerEl = document.createElement("div");
-    timerEl.id = "cronometro";
-    timerEl.style.marginBottom = "10px";
-    timerEl.style.fontWeight = "600";
-    timerEl.style.color = "#0ec0d9";
-    // insere no topo da seção quiz
-    quizSection.insertBefore(timerEl, perguntaEl);
+function elSafe(el) { return !!el; }
+
+let currentAudio = null;
+let isPlaying = false;
+let progressInterval = null;
+
+// perguntas
+const perguntas = [
+  { pergunta: "Quantas cordas uma guitarra tem?", opcoes: ["8", "6", "4"], resposta: "6" },
+  { pergunta: "Qual destas partes é responsável por produzir o som amplificado da guitarra elétrica?", opcoes: ["Captadores", "Tarraxas", "Ponte"], resposta: "Captadores" },
+  { pergunta: "Qual dessas funções o FL Studio não realiza diretamente", opcoes: ["Gravar instrumentos", "Editar aúdio", "Tocar guitarra física automaticamente"], resposta: "Tocar guitarra física automaticamente" },
+  { pergunta: "Qual artista abriu portas no hip-hop para novos subgêneros no início dos anos 2000?", opcoes: ["kanye west", "Venom extreme", "Leandro Fonseca"], resposta: "kanye west" },
+  { pergunta: "Quantas notas tem em uma escala musical?", opcoes: ["8", "7", "6"], resposta: "8" },
+  { pergunta: "Qual é a principal diferença entre a guitarra elétrica e a acústica?", opcoes: ["A guitarra elétrica não precisa de cabos.", "A guitarra elétrica precisa de um amplificador para produzir som.", "A guitarra elétrica tem cordas de nylon."], resposta: "A guitarra elétrica precisa de um amplificador para produzir som." },
+  { pergunta: "Para que serve o amplificador na guitarra elétrica?", opcoes: ["Para afinar as cordas automaticamente.", "Para aumentar e modificar o som da guitarra.", "Para carregar a bateria do instrumento."], resposta: "Para aumentar e modificar o som da guitarra." },
+  { pergunta: "O que é um sintetizador?", opcoes: ["Um instrumento que grava o som de outros.", "Um instrumento que cria sons eletronicamente.", "Um tipo de microfone."], resposta: "Um instrumento que cria sons eletronicamente." },
+  { pergunta: "O que o autotune faz com a voz de um cantor?", opcoes: ["Aumenta o volume da voz.", "Corrige ou altera a afinação da voz.", "Adiciona eco e reverb automaticamente."], resposta: "Corrige ou altera a afinação da voz." },
+  { pergunta: "Em quais estilos musicais o autotune é mais usado atualmente?", opcoes: ["Rock clássico e jazz.", "Pop, rap e música eletrônica.", "Música erudita e ópera."], resposta: "Pop, rap e música eletrônica." }
+];
+
+localStorage.removeItem("ranking");
+
+// Timer da pergunta em bola branca
+let timerPerguntaEl = null;
+function createTimerPerguntaEl() {
+  if (!timerPerguntaEl && elSafe(quizSection)) {
+    timerPerguntaEl = document.createElement("div");
+    timerPerguntaEl.id = "timerPergunta";
+    timerPerguntaEl.style.cssText = `
+      width: 60px; height: 60px; border-radius: 50%; 
+      border: 3px solid #fff; background: transparent; color: #fff; 
+      font-weight: bold; display: flex; align-items: center; justify-content: center; 
+      font-size: 24px; margin: 10px auto;
+    `;
+    quizSection.insertBefore(timerPerguntaEl, opcoesEl);
   }
 }
 
-// -------- Perguntas (12) --------
-const perguntas = [
-  { pergunta: "Qual instrumento moderno é conhecido por ter 6 cordas?", opcoes: ["Guitarra","Bateria","Sintetizador"], resposta: "Guitarra" },
-  { pergunta: "Qual instrumento é tocado com baquetas e produz ritmo?", opcoes: ["Bateria","Piano","Baixo"], resposta: "Bateria" },
-  { pergunta: "Qual instrumento possui teclas brancas e pretas?", opcoes: ["Piano","Violão","Guitarra"], resposta: "Piano" },
-  { pergunta: "Qual instrumento moderno eletrônico é usado para efeitos e sons sintéticos?", opcoes: ["Sintetizador","Bateria","Violino"], resposta: "Sintetizador" },
-  { pergunta: "Qual instrumento tem cordas e é tocado com palheta ou dedos?", opcoes: ["Baixo","Bateria","Piano"], resposta: "Baixo" },
-  { pergunta: "Qual instrumento produz sons graves e marca a base da música?", opcoes: ["Baixo","Guitarra","Teclado"], resposta: "Baixo" },
-  { pergunta: "Qual instrumento moderno é portátil e toca sons digitais?", opcoes: ["Teclado MIDI","Bateria","Violão"], resposta: "Teclado MIDI" },
-  { pergunta: "Qual instrumento eletrônico é muito usado em música eletrônica e DJ sets?", opcoes: ["Controlador DJ","Guitarra","Bateria"], resposta: "Controlador DJ" },
-  { pergunta: "Qual instrumento produz sons percussivos sem cordas ou teclas?", opcoes: ["Cajón","Piano","Baixo"], resposta: "Cajón" },
-  { pergunta: "Qual instrumento moderno tem pads sensíveis ao toque e sons eletrônicos?", opcoes: ["Drum Pad","Violão","Sintetizador"], resposta: "Drum Pad" },
-  { pergunta: "Qual instrumento é elétrico e similar à guitarra, mas com notas graves?", opcoes: ["Baixo elétrico","Bateria","Teclado"], resposta: "Baixo elétrico" },
-  { pergunta: "Qual instrumento moderno pode ser tocado via computador usando softwares?", opcoes: ["Controlador MIDI","Guitarra","Bateria"], resposta: "Controlador MIDI" }
-];
-
-let indice = 0;
-
-// -------- Sons dos instrumentos (na área instrumentos) --------
-const instrumentos = document.querySelectorAll('.item');
-instrumentos.forEach(item => {
-  item.addEventListener('click', () => {
-    const som = item.getAttribute('data-som');
-    if (!som) return;
-    const audio = new Audio(`assets/sounds/${som}.mp3`);
-    audio.volume = 0.9;
-    audio.play().catch(()=>{/* ignora autoplay errors */});
-  });
-});
-
-// -------- Início: Splash → inicia timer e quiz --------
-startBtn.addEventListener("click", () => {
-  splash.classList.add("hidden");
-  mainApp.classList.remove("hidden");
-  // inicia cronômetro visível
-  tempoInicio = Date.now();
-  createTimerEl();
-  updateTimer(); // atualiza imediatamente
-  tempoInterval = setInterval(updateTimer, 500);
-  // inicia quiz
-  pontuacao = 0;
-  indice = 0;
-  mostrarPergunta();
-});
-
-// atualiza cronômetro no formato mm:ss
-function updateTimer() {
-  if (!tempoInicio) return;
-  const diff = Date.now() - tempoInicio;
-  const sec = Math.floor(diff / 1000);
-  const mm = String(Math.floor(sec / 60)).padStart(2, "0");
-  const ss = String(sec % 60).padStart(2, "0");
-  if (timerEl) timerEl.textContent = `Tempo: ${mm}:${ss}`;
+function startTimerPergunta() {
+  if(timerPerguntaInterval) clearInterval(timerPerguntaInterval);
+  let tempoRestante = tempoPergunta;
+  if(elSafe(timerPerguntaEl)) timerPerguntaEl.textContent = tempoRestante;
+  timerPerguntaInterval = setInterval(() => {
+    tempoRestante--;
+    if(elSafe(timerPerguntaEl)) timerPerguntaEl.textContent = tempoRestante;
+    if(tempoRestante <= 0) {
+      clearInterval(timerPerguntaInterval);
+      marcarComoErradaPorTempo();
+    }
+  }, 1000);
 }
 
-// -------- Mostrar pergunta atual (uma por vez) --------
+// Shuffle
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+// Partículas
+(function setupParticles() {
+  const canvas = document.getElementById("particles");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  let w = canvas.width = window.innerWidth;
+  let h = canvas.height = window.innerHeight;
+  const N = 80;
+  const particles = [];
+  for (let i = 0; i < N; i++) {
+    particles.push({ x: Math.random()*w, y: Math.random()*h, r: Math.random()*3+1, dx: (Math.random()-0.5)*0.8, dy: Math.random()*0.6+0.2 });
+  }
+  function draw() {
+    ctx.clearRect(0,0,w,h);
+    particles.forEach(p=>{
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle="rgba(255,215,0,0.8)";
+      ctx.fill();
+      p.x+=p.dx; p.y+=p.dy;
+      if(p.x>w)p.x=0;if(p.x<0)p.x=w;
+      if(p.y>h)p.y=0;if(p.y<0)p.y=h;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+  window.addEventListener("resize",()=>{ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight; });
+})();
+
+// Start quiz
+if (elSafe(startBtn)) {
+  startBtn.addEventListener("click", ()=>{
+    if(elSafe(splash)) splash.classList.add("hidden");
+    if(elSafe(mainApp)) mainApp.classList.remove("hidden");
+    if(elSafe(quizSection)) quizSection.classList.remove("hidden");
+    if(elSafe(finalSection)) finalSection.classList.add("hidden");
+
+    shuffle(perguntas);
+    perguntas.forEach(p=>shuffle(p.opcoes));
+
+    tempoInicio = Date.now();
+    createTimerPerguntaEl();
+    pontuacao=0; indice=0;
+    mostrarPergunta();
+  });
+}
+
+// Mostrar pergunta
 function mostrarPergunta() {
-  // garantir que quiz esteja visível
-  quizSection.classList.remove("hidden");
-
+  respostaSelecionada=false;
+  if(!elSafe(perguntaEl) || !elSafe(opcoesEl)) return;
   const atual = perguntas[indice];
-  perguntaEl.textContent = atual.pergunta;
-  opcoesEl.innerHTML = "";
+  perguntaEl.textContent=atual.pergunta;
+  opcoesEl.innerHTML="";
+  resultadoEl.textContent="";
 
-  // cria botões de opções
-  atual.opcoes.forEach(opcao => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = opcao;
-    btn.className = "resposta-btn"; // estilizado no CSS
-    // acessibilidade
-    btn.setAttribute("aria-pressed", "false");
-    btn.addEventListener("click", () => handleAnswer(btn, opcao));
+  shuffle(atual.opcoes).forEach(opcao=>{
+    const btn=document.createElement("button");
+    btn.textContent=opcao;
+    btn.className="resposta-btn";
+    btn.type="button";
+    btn.addEventListener("click",()=>handleAnswer(btn,opcao));
     opcoesEl.appendChild(btn);
   });
 
-  // resultado limpo
-  resultadoEl.textContent = "";
-  // exibe texto no botão próximo
-  btnProxima.textContent = indice === perguntas.length - 1 ? "Finalizar" : "Próxima Pergunta";
-  // mostra botão próxima
-  btnProxima.style.display = "inline-block";
+  if(elSafe(btnProxima)) btnProxima.textContent=indice===perguntas.length-1?"Finalizar":"Próxima Pergunta";
+
+  startTimerPergunta();
 }
 
-// -------- Resposta: cores, som e bloqueio --------
-function handleAnswer(btnSelecionado, opcao) {
-  const atual = perguntas[indice];
+// Responder
+function handleAnswer(btn,opcao){
+  const atual=perguntas[indice];
+  respostaSelecionada=true;
+  clearInterval(timerPerguntaInterval);
+  const botoes=Array.from(opcoesEl.querySelectorAll("button"));
+  botoes.forEach(b=>b.disabled=true);
+  botoes.forEach(b=>{ if(b.textContent===atual.resposta) b.classList.add("correta"); else b.classList.add("errada"); });
 
-  // pega todos os botões atuais e desativa
+  const feedbackSrc = opcao===atual.resposta?"assets/sounds/correct.mp3":"assets/sounds/wrong.mp3";
+  const feedbackAudio=new Audio(feedbackSrc); feedbackAudio.currentTime=0; feedbackAudio.play().catch(()=>{});
+
+  if(opcao===atual.resposta){ pontuacao++; resultadoEl.textContent="✅ Correto!"; }
+  else resultadoEl.textContent=`❌ Errado! Resposta correta: ${atual.resposta}`;
+}
+
+// Marcar como errada por tempo
+function marcarComoErradaPorTempo() {
+  const atual = perguntas[indice];
+  respostaSelecionada = true;
   const botoes = Array.from(opcoesEl.querySelectorAll("button"));
   botoes.forEach(b => b.disabled = true);
-
-  // marca cores: correta -> .correta, demais -> .errada
-  botoes.forEach(b => {
-    if (b.textContent === atual.resposta) {
-      b.classList.add("correta"); // verde
-    } else {
-      b.classList.add("errada"); // vermelho
-    }
-  });
-
-  // toca som apropriado
-  try {
-    const soundPath = (opcao === atual.resposta) ? "assets/sounds/correct.mp3" : "assets/sounds/wrong.mp3";
-    const audio = new Audio(soundPath);
-    audio.volume = 0.9;
-    audio.play().catch(()=>{ /* evitar erros de autoplay */ });
-  } catch (e) {
-    console.warn("Erro ao tocar som:", e);
-  }
-
-  // pontuação e feedback texto
-  if (opcao === atual.resposta) {
-    pontuacao++;
-    resultadoEl.textContent = "✅ Correto!";
-  } else {
-    resultadoEl.textContent = `❌ Errado! Resposta correta: ${atual.resposta}`;
-  }
+  botoes.forEach(b => { if(b.textContent === atual.resposta) b.classList.add("correta"); else b.classList.add("errada"); });
+  resultadoEl.textContent = `⏰ Tempo esgotado! Resposta correta: ${atual.resposta}`;
 }
 
-// -------- Próxima / Finalizar --------
-btnProxima.addEventListener("click", () => {
-  // importante: se usuário não respondeu (botões não desativados), ainda permitimos avançar
-  // avança normalmente
-  if (indice < perguntas.length - 1) {
-    indice++;
-    mostrarPergunta();
-    // ao avançar, ocultamos botão "anterior" (vocês pediram sem anterior)
-    // mantemos apenas o botão próxima
-  } else {
-    finalizarQuiz();
-  }
-});
+// Próxima / finalizar
+if(elSafe(btnProxima)){
+  btnProxima.addEventListener("click", ()=>{
+    if(!respostaSelecionada){ alert("Selecione uma resposta antes de avançar!"); return; }
+    if(indice<perguntas.length-1){ indice++; mostrarPergunta(); }
+    else finalizarQuiz();
+  });
+}
 
-// -------- Finalizar quiz: mostrar pontuação, tempo e ranking --------
-function finalizarQuiz() {
-  // parar timer
-  if (tempoInterval) clearInterval(tempoInterval);
-  const tempoFim = Date.now();
-  const tempoTotalSeg = Math.floor((tempoFim - tempoInicio) / 1000);
+// Finalizar
+function finalizarQuiz(){
+  clearInterval(timerPerguntaInterval);
+  if(elSafe(quizSection)) quizSection.classList.add("hidden");
+  if(elSafe(finalSection)) finalSection.classList.remove("hidden");
 
-  // esconder quiz
-  quizSection.classList.add("hidden");
-  btnProxima.style.display = "none";
-
-  // mostrar resultados
-  resultadoEl.innerHTML = `
-    <div class="final-box">
-      <h3>🎉 Fim do quiz!</h3>
-      <p><strong>Pontuação:</strong> ${pontuacao}/${perguntas.length}</p>
-      <p><strong>Tempo:</strong> ${tempoTotalSeg}s</p>
-      <div class="final-actions">
-        <button id="verRanking">🏆 Ver Ranking</button>
-        <button id="reiniciarQuiz">🔄 Reiniciar</button>
+  const tempoFim=Date.now(); 
+  const tempoTotalSeg=Math.floor((tempoFim-tempoInicio)/1000); 
+  const erros=perguntas.length-pontuacao;
+  if(!elSafe(finalBox)) return;
+  finalBox.innerHTML=`
+    <div style="
+      background: linear-gradient(90deg,#0a98b1,#0ec0d9);
+      padding: 25px; border-radius: 20px; color: #fff;
+      box-shadow: 0 0 25px rgba(14,192,217,0.5);
+      animation: fadeIn 1s ease;
+      text-align: center;
+    ">
+      <h3>🎉 Fim do Quiz!</h3>
+      <p>✅ Acertos: ${pontuacao}</p>
+      <p>❌ Erros: ${erros}</p>
+      <p>⏱ Tempo total: ${tempoTotalSeg}s</p>
+      <div class="final-actions" style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
+        <button id="verRanking">Ver Ranking</button>
+        <button id="voltarInicio">Voltar ao Início</button>
       </div>
     </div>
   `;
 
-  // salvar no ranking local (adiciona data)
-  const ranking = JSON.parse(localStorage.getItem("ranking")) || [];
-  ranking.push({ pontuacao, tempo: tempoTotalSeg, date: new Date().toISOString() });
-  ranking.sort((a, b) => (b.pontuacao - a.pontuacao) || (a.tempo - b.tempo)); // maior pontuação, menor tempo
-  localStorage.setItem("ranking", JSON.stringify(ranking));
+  const ranking=JSON.parse(localStorage.getItem("ranking"))||[];
+  ranking.push({pontuacao,tempo:tempoTotalSeg,date:new Date().toISOString()});
+  ranking.sort((a,b)=>b.pontuacao-a.pontuacao||a.tempo-b.tempo);
+  localStorage.setItem("ranking",JSON.stringify(ranking));
 
-  // eventos dos botões finais
-  document.getElementById("verRanking").addEventListener("click", mostrarRanking);
-  document.getElementById("reiniciarQuiz").addEventListener("click", reiniciarQuiz);
-}
+  const verRankingBtn=document.getElementById("verRanking");
+  if(verRankingBtn) verRankingBtn.addEventListener("click", mostrarRanking);
 
-// -------- Ranking (mostra lista) --------
-function mostrarRanking() {
-  const ranking = JSON.parse(localStorage.getItem("ranking")) || [];
-  let html = `<div id="ranking"><h3>🏆 Ranking</h3><ol>`;
-  ranking.forEach((entry, i) => {
-    // exibir data legível
-    const d = new Date(entry.date);
-    const dateStr = `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
-    html += `<li><strong>#${i+1}</strong> — ${entry.pontuacao} pts • ${entry.tempo}s <span class="rank-date">(${dateStr})</span></li>`;
+  const voltarInicioBtn=document.getElementById("voltarInicio");
+  if(voltarInicioBtn) voltarInicioBtn.addEventListener("click", ()=>{
+    if(elSafe(finalSection)) finalSection.classList.add("hidden");
+    if(elSafe(splash)) splash.classList.remove("hidden");
   });
-  html += `</ol><div class="final-actions"><button id="reiniciarQuiz2">🔄 Reiniciar</button></div></div>`;
-
-  resultadoEl.innerHTML = html;
-  document.getElementById("reiniciarQuiz2").addEventListener("click", reiniciarQuiz);
 }
 
-// -------- Reiniciar --------
-function reiniciarQuiz() {
-  pontuacao = 0;
-  indice = 0;
-  tempoInicio = Date.now();
-  if (tempoInterval) clearInterval(tempoInterval);
-  createTimerEl();
-  updateTimer();
-  tempoInterval = setInterval(updateTimer, 500);
+// Ranking
+function mostrarRanking(){
+  const ranking = JSON.parse(localStorage.getItem("ranking")) || [];
+  let html = `
+    <div style="
+      background: linear-gradient(90deg,#0a98b1,#0ec0d9);
+      padding: 25px; border-radius: 20px; color: #fff;
+      box-shadow: 0 0 25px rgba(14,192,217,0.5);
+      animation: fadeIn 1s ease;
+      text-align: center;
+    ">
+      <h2>🏆 Ranking</h2>
+      <ol style="text-align:left; padding-left:20px; margin-top:15px;">
+  `;
 
-  quizSection.classList.remove("hidden");
-  resultadoEl.textContent = "";
-  btnProxima.style.display = "inline-block";
+  ranking.forEach((entry,i)=>{
+    const d = new Date(entry.date);
+    html += `<li style="margin-bottom:8px;">#${i+1} — ${entry.pontuacao} pts • ${entry.tempo}s <span class="rank-date">(${d.toLocaleDateString()} ${d.toLocaleTimeString()})</span></li>`;
+  });
+
+  html += `</ol>
+      <div class='final-actions' style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
+        <button id='reiniciarQuiz2'>Reiniciar Quiz</button>
+        <button id='voltarInicioRanking'>Voltar ao Início</button>
+      </div>
+    </div>
+  `;
+
+  finalBox.innerHTML = html;
+
+  const reiniciarBtn = document.getElementById("reiniciarQuiz2");
+  if(reiniciarBtn) reiniciarBtn.addEventListener("click", reiniciarQuiz);
+
+  const voltarInicioRankingBtn = document.getElementById("voltarInicioRanking");
+  if(voltarInicioRankingBtn) voltarInicioRankingBtn.addEventListener("click", ()=>{
+    if(elSafe(finalSection)) finalSection.classList.add("hidden");
+    if(elSafe(splash)) splash.classList.remove("hidden");
+  });
+}
+
+// Reiniciar
+function reiniciarQuiz(){
+  pontuacao=0; indice=0; tempoInicio=Date.now();
+  createTimerPerguntaEl();
+  shuffle(perguntas); perguntas.forEach(p=>shuffle(p.opcoes));
+  if(elSafe(quizSection)) quizSection.classList.remove("hidden");
+  if(elSafe(finalSection)) finalSection.classList.add("hidden");
   mostrarPergunta();
 }
