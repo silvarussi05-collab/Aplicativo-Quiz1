@@ -162,11 +162,20 @@ function handleAnswer(btn,opcao){
   botoes.forEach(b=>b.disabled=true);
   botoes.forEach(b=>{ if(b.textContent===atual.resposta) b.classList.add("correta"); else b.classList.add("errada"); });
 
-  const feedbackSrc = opcao===atual.resposta?"assets/sounds/correct.mp3":"assets/sounds/wrong.mp3";
-  const feedbackAudio=new Audio(feedbackSrc); feedbackAudio.currentTime=0; feedbackAudio.play().catch(()=>{});
+  // ✅ Ajuste do áudio para GitHub Pages
+  const feedbackSrc = opcao===atual.resposta 
+    ? "assets/sounds/correct.mp3" 
+    : "assets/sounds/wrong.mp3";
+  const feedbackAudio = new Audio(feedbackSrc);
+  feedbackAudio.currentTime = 0;
+  feedbackAudio.play().catch(()=>{});
 
-  if(opcao===atual.resposta){ pontuacao++; resultadoEl.textContent="✅ Correto!"; }
-  else resultadoEl.textContent=`❌ Errado! Resposta correta: ${atual.resposta}`;
+  if(opcao===atual.resposta){ 
+    pontuacao++; 
+    resultadoEl.textContent="✅ Correto!"; 
+  } else {
+    resultadoEl.textContent=`❌ Errado! Resposta correta: ${atual.resposta}`;
+  }
 }
 
 // Marcar como errada por tempo
@@ -199,21 +208,13 @@ function finalizarQuiz(){
   const erros=perguntas.length-pontuacao;
   if(!elSafe(finalBox)) return;
   finalBox.innerHTML=`
-    <div style="
-      background: linear-gradient(90deg,#0a98b1,#0ec0d9);
-      padding: 25px; border-radius: 20px; color: #fff;
-      box-shadow: 0 0 25px rgba(14,192,217,0.5);
-      animation: fadeIn 1s ease;
-      text-align: center;
-    ">
-      <h3>🎉 Fim do Quiz!</h3>
-      <p>✅ Acertos: ${pontuacao}</p>
-      <p>❌ Erros: ${erros}</p>
-      <p>⏱ Tempo total: ${tempoTotalSeg}s</p>
-      <div class="final-actions" style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
-        <button id="verRanking">Ver Ranking</button>
-        <button id="voltarInicio">Voltar ao Início</button>
-      </div>
+    <h3>🎉 Fim do Quiz!</h3>
+    <p>✅ Acertos: ${pontuacao}</p>
+    <p>❌ Erros: ${erros}</p>
+    <p>⏱ Tempo total: ${tempoTotalSeg}s</p>
+    <div class="final-actions">
+      <button id="verRanking">Ver Ranking</button>
+      <button id="voltarInicio">Voltar ao Início</button>
     </div>
   `;
 
@@ -234,42 +235,16 @@ function finalizarQuiz(){
 
 // Ranking
 function mostrarRanking(){
-  const ranking = JSON.parse(localStorage.getItem("ranking")) || [];
-  let html = `
-    <div style="
-      background: linear-gradient(90deg,#0a98b1,#0ec0d9);
-      padding: 25px; border-radius: 20px; color: #fff;
-      box-shadow: 0 0 25px rgba(14,192,217,0.5);
-      animation: fadeIn 1s ease;
-      text-align: center;
-    ">
-      <h2>🏆 Ranking</h2>
-      <ol style="text-align:left; padding-left:20px; margin-top:15px;">
-  `;
-
+  const ranking=JSON.parse(localStorage.getItem("ranking"))||[];
+  let html=`<h3>🏆 Ranking</h3><ol>`;
   ranking.forEach((entry,i)=>{
-    const d = new Date(entry.date);
-    html += `<li style="margin-bottom:8px;">#${i+1} — ${entry.pontuacao} pts • ${entry.tempo}s <span class="rank-date">(${d.toLocaleDateString()} ${d.toLocaleTimeString()})</span></li>`;
+    const d=new Date(entry.date);
+    html+=`<li>#${i+1} — ${entry.pontuacao} pts • ${entry.tempo}s <span class="rank-date">(${d.toLocaleDateString()} ${d.toLocaleTimeString()})</span></li>`;
   });
-
-  html += `</ol>
-      <div class='final-actions' style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
-        <button id='reiniciarQuiz2'>Reiniciar Quiz</button>
-        <button id='voltarInicioRanking'>Voltar ao Início</button>
-      </div>
-    </div>
-  `;
-
-  finalBox.innerHTML = html;
-
-  const reiniciarBtn = document.getElementById("reiniciarQuiz2");
+  html+=`</ol><div class='final-actions'><button id='reiniciarQuiz2'>Reiniciar Quiz</button></div>`;
+  finalBox.innerHTML=html;
+  const reiniciarBtn=document.getElementById("reiniciarQuiz2");
   if(reiniciarBtn) reiniciarBtn.addEventListener("click", reiniciarQuiz);
-
-  const voltarInicioRankingBtn = document.getElementById("voltarInicioRanking");
-  if(voltarInicioRankingBtn) voltarInicioRankingBtn.addEventListener("click", ()=>{
-    if(elSafe(finalSection)) finalSection.classList.add("hidden");
-    if(elSafe(splash)) splash.classList.remove("hidden");
-  });
 }
 
 // Reiniciar
